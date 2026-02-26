@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>炸金花</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    }
+    body {
+      background: url("https://picsum.photos/id/119/1920/1080") no-repeat center center fixed;
+      background-size: cover;
+      color: #fff;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+    .page {
+      display: none;
+      width: 100%;
+      height: 100vh;
+      max-width: 1000px;
+      margin: 0 auto;
+      position: relative;
+      padding: 20px;
+    }
+    .page.active {
+      display: block;
+    }
+
+    /* 首页样式 */
+    .home-box {
+      background: rgba(0,0,0,0.6);
+      border-radius: 20px;
+      padding: 40px 30px;
+      max-width: 420px;
+      margin: 10vh auto 0;
+      backdrop-filter: blur(10px);
+    }
+    .home-title {
+      text-align: center;
+      font-size: 36px;
+      font-weight: bold;
+      color: #ffd700;
+      text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+      margin-bottom: 30px;
+    }
+    .input-item {
+      margin-bottom: 20px;
+    }
+    .input-item label {
+      display: block;
+      font-size: 14px;
+      color: #ddd;
+      margin-bottom: 8px;
+      padding-left: 10px;
+    }
+    .input-item input {
+      width: 100%;
+      padding: 14px 16px;
+      border-radius: 12px;
+      border: none;
+      background: rgba(255,255,255,0.15);
+      color: #fff;
+      font-size: 16px;
+    }
+    .input-item input::placeholder {
+      color: #aaa;
+    }
+    .home-btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    .btn {
+      padding: 14px;
+      border-radius: 12px;
+      border: none;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #ffb400, #ff8a00);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(255,138,0,0.4);
+    }
+    .btn-secondary {
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+    }
+    .btn-small {
+      padding: 8px 16px;
+      font-size: 14px;
+      border-radius: 8px;
+    }
+    .btn-danger {
+      background: #e53935;
+      color: #fff;
+    }
+    .divider {
+      text-align: center;
+      color: #aaa;
+      margin: 15px 0;
+      font-size: 14px;
+    }
+
+    /* 房间内界面（斗地主风格） */
+    .room-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      right: 20px;
+      z-index: 10;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .room-id-box {
+      background: rgba(0,0,0,0.5);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      color: #ffd700;
+      font-weight: bold;
+    }
+    .pot-box {
+      background: rgba(0,0,0,0.5);
+      padding: 8px 20px;
+      border-radius: 20px;
+      text-align: center;
+    }
+    .pot-title {
+      font-size: 12px;
+      color: #ddd;
+    }
+    .pot-num {
+      font-size: 18px;
+      color: #ffd700;
+      font-weight: bold;
+    }
+    .back-btn {
+      background: rgba(0,0,0,0.5);
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: #fff;
+      cursor: pointer;
+    }
+
+    /* 房主专属筹码设置区（右上角角落） */
+    .owner-set-chip-box {
+      background: rgba(0,0,0,0.7);
+      padding: 10px 12px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      max-width: 380px;
+    }
+    .owner-set-chip-box select,
+    .owner-set-chip-box input {
+      padding: 6px 8px;
+      border-radius: 8px;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      font-size: 13px;
+    }
+    .owner-set-chip-box select option {
+      background: #222;
+    }
+    .owner-set-chip-box label {
+      font-size: 13px;
+      color: #ffd700;
+      font-weight: bold;
+    }
+
+    /* 玩家布局（斗地主风格：上2、左右各1、底1） */
+    .players-area {
+      width: 100%;
+      height: 100%;
+      position: relative;
+    }
+    .player-card {
+      position: absolute;
+      text-align: center;
+      z-index: 5;
+    }
+    .player-card.top-left {
+      top: 80px;
+      left: 20px;
+    }
+    .player-card.top-right {
+      top: 80px;
+      right: 20px;
+    }
+    .player-card.left {
+      top: 50%;
+      left: 20px;
+      transform: translateY(-50%);
+    }
+    .player-card.right {
+      top: 50%;
+      right: 20px;
+      transform: translateY(-50%);
+    }
+    .player-card.bottom {
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    .player-avatar {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      border: 3px solid #fff;
+      overflow: hidden;
+      margin: 0 auto 8px;
+      background: #333;
+    }
+    .player-avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .player-name {
+      font-size: 14px;
+      font-weight: bold;
+      margin-bottom: 4px;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+    }
+    .player-chip {
+      font-size: 12px;
+      color: #ffd700;
+      margin-bottom: 4px;
+    }
+    .player-status {
+      font-size: 12px;
+      color: #0fec82;
+      background: rgba(0,0,0,0.5);
+      padding: 2px 8px;
+      border-radius: 10px;
+      display: inline-block;
+    }
+
+    /* 牌面区域 */
+    .cards-area {
+      position: absolute;
+      bottom: 140px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 8px;
+      z-index: 4;
+    }
+    .card {
+      width: 80px;
+      height: 112px;
+      background: #fff;
+      color: #000;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      display: grid;
+      place-items: center;
+      font-size: 26px;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+    .card.back {
+      background: linear-gradient(135deg, #d32f2f, #b71c1c);
+      color: #fff;
+      font-size: 18px;
+    }
+    .card.red {
+      color: #d32f2f;
+    }
+    .card.black {
+      color: #000;
+    }
+
+    /* 操作按钮区域（斗地主风格） */
+    .action-area {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      z-index: 10;
+    }
+    .action-btn {
+      width: 120px;
+      height: 50px;
+      border-radius: 25px;
+      border: none;
+      font-size: 18px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .action-btn.yellow {
+      background: linear-gradient(135deg, #ffb400, #ff8a00);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(255,138,0,0.4);
+    }
+    .action-btn.blue {
+      background: linear-gradient(135deg, #42a5f5, #1976d2);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(25,118,210,0.4);
+    }
+    .action-btn.green {
+      background: linear-gradient(135deg, #66bb6a, #2e7d32);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(46,125,50,0.4);
+    }
+    .action-btn.red {
+      background: linear-gradient(135deg, #ef5350, #c62828);
+      color: #fff;
+      box-shadow: 0 4px 12px rgba(198,40,40,0.4);
+    }
+    .action-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .bet-input-box {
+      background: rgba(0,0,0,0.6);
+      padding: 8px 16px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .bet-input-box label {
+      font-size: 14px;
+      color: #fff;
+    }
+    .bet-input-box input {
+      width: 80px;
+      padding: 6px;
+      border-radius: 10px;
+      border: none;
+      background: rgba(255,255,255,0.2);
+      color: #fff;
+      text-align: center;
+      font-size: 16px;
+    }
+
+    /* 弹窗样式 */
+    .modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      place-items: center;
+      z-index: 999;
+    }
+    .modal.active {
+      display: grid;
+    }
+    .modal-content {
+      background: #fff;
+      color: #333;
+      border-radius: 20px;
+      padding: 30px;
+      max-width: 360px;
+      width: 90%;
+      text-align: center;
+    }
+    .modal-title {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+    }
+    .modal-input {
+      width: 100%;
+      padding: 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+      font-size: 16px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .modal-btn-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+    }
+    .result-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .result-player-cards {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .result-card-row {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <!-- 首页 -->
+  <div class="page active" id="homePage">
+    <div class="home-box">
+      <h1 class="home-title">炸金花</h1>
+      <div class="input-item">
+        <label>你的昵称</label>
+        <input type="text" id="nicknameInput" placeholder="请输入你的昵称" autocomplete="off">
+      </div>
+      <div class="home-btn-group">
+        <button class="btn btn-primary" id="createRoomBtn">创建房间</button>
+        <div class="divider">或</div>
+        <div class="input-item">
+          <label>房间号</label>
+          <input type="text" id="roomIdInput" placeholder="请输入6位数字房间号" maxlength="6" autocomplete="off">
+        </div>
+        <button class="btn btn-secondary" id="joinRoomBtn">加入房间</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 游戏房间页（斗地主风格） -->
+  <div class="page" id="gamePage">
+    <div class="room-top-bar">
+      <div class="back-btn" id="exitRoomBtn">←</div>
+      <div class="room-id-box" id="roomIdText">房间号：000000</div>
+      <div class="pot-box">
+        <div class="pot-title">奖池</div>
+        <div class="pot-num" id="potNum">0</div>
+      </div>
+
+      <!-- 房主专属筹码设置区（右上角角落） -->
+      <div class="owner-set-chip-box" id="ownerSetBox" style="display: none;">
+        <label>设置筹码</label>
+        <select id="playerSelect"></select>
+        <input type="number" id="setChipInput" placeholder="筹码数" min="0" value="1000">
+        <button class="btn btn-small btn-primary" id="confirmSetChipBtn">确定</button>
+      </div>
+    </div>
+
+    <div class="players-area" id="playersArea"></div>
+    <div class="cards-area" id="myCardsArea"></div>
+
+    <div class="action-area" id="actionArea">
+      <div class="bet-input-box" id="betInputBox">
+        <label>下注：</label>
+        <input type="number" id="betInput" value="1" min="1">
+      </div>
+      <button class="action-btn blue" id="lookBtn" disabled>看牌</button>
+      <button class="action-btn yellow" id="callBtn" disabled>跟注</button>
+      <button class="action-btn yellow" id="raiseBtn" disabled>加注</button>
+      <button class="action-btn green" id="compareBtn" disabled>比牌</button>
+      <button class="action-btn red" id="foldBtn" disabled>弃牌</button>
+      <button class="action-btn yellow" id="readyBtn" style="display: none;">准备</button>
+      <button class="action-btn green" id="startBtn" style="display: none;" disabled>开始游戏</button>
+    </div>
+  </div>
+
+  <!-- 结果弹窗 -->
+  <div class="modal" id="resultModal">
+    <div class="modal-content">
+      <div class="modal-title" id="resultTitle">游戏结束</div>
+      <div class="result-cards" id="resultCards"></div>
+      <div class="modal-title" id="resultDesc">你赢了！</div>
+      <button class="btn btn-primary" id="closeResultBtn">确认</button>
+    </div>
+  </div>
+
+  <script>
+    // 核心配置
+    const BASE_BET = 1;
+    const MAX_PLAYERS = 5;
+    const MIN_PLAYERS = 2;
+    const CARD_SUITS = ['♠', '♥', '♣', '♦'];
+    const CARD_RANKS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    const HAND_TYPE = {
+      HIGH_CARD: 0,
+      PAIR: 1,
+      STRAIGHT: 2,
+      FLUSH: 3,
+      STRAIGHT_FLUSH: 4,
+      THREE_OF_A_KIND: 5,
+      SPECIAL_235: 6
+    };
+    const HAND_TYPE_NAME = {
+      0: '单张',
+      1: '对子',
+      2: '顺子',
+      3: '金花',
+      4: '顺金',
+      5: '豹子',
+      6: '特殊235'
+    };
+    const AVATAR_LIST = [
+      'https://picsum.photos/id/64/200/200',
+      'https://picsum.photos/id/65/200/200',
+      'https://picsum.photos/id/91/200/200',
+      'https://picsum.photos/id/94/200/200',
+      'https://picsum.photos/id/129/200/200'
+    ];
+
+    // 全局状态
+    let currentPage = 'homePage';
+    let myId = Math.random().toString(36).substring(2, 10);
+    let myNickname = '';
+    let currentRoomId = '';
+    let roomData = {};
+    let syncTimer = null;
+
+    // DOM工具
+    const $ = (id) => document.getElementById(id);
+    const showPage = (pageId) => {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      $(pageId).classList.add('active');
+      currentPage = pageId;
+    };
+
+    // 房间存储
+    const RoomStore = {
+      get: (roomId) => {
+        const data = localStorage.getItem(`zhajinhua_room_${roomId}`);
+        return data ? JSON.parse(data) : null;
+      },
+      set: (roomId, data) => {
+        localStorage.setItem(`zhajinhua_room_${roomId}`, JSON.stringify(data));
+      },
+      delete: (roomId) => {
+        localStorage.removeItem(`zhajinhua_room_${roomId}`);
+      }
+    };
+
+    // 生成房间号
+    const generateRoomId = () => Math.floor(100000 + Math.random() * 900000).toString();
+
+    // 牌型判断
+    function evaluateHand(cards) {
+      const values = cards.map(c => c.value).sort((a, b) => b - a);
+      const isFlush = cards.every(c => c.suit === cards[0].suit);
+      const isStraight = (values[0] - values[2] === 2 && new Set(values).size === 3) || (values.join(',') === '14,3,2');
+      const isThreeOfAKind = values[0] === values[1] && values[1] === values[2];
+      const isPair = new Set(values).size === 2;
+      const is235 = values.join(',') === '5,3,2';
+
+      if (is235) return { type: HAND_TYPE.SPECIAL_235, value: 999, values };
+      if (isThreeOfAKind) return { type: HAND_TYPE.THREE_OF_A_KIND, value: values[0], values };
+      if (isStraight && isFlush) return { type: HAND_TYPE.STRAIGHT_FLUSH, value: values[0], values };
+      if (isFlush) return { type: HAND_TYPE.FLUSH, value: values, values };
+      if (isStraight) return { type: HAND_TYPE.STRAIGHT, value: values[0], values };
+      if (isPair) {
+        const pairValue = values.find((v, i, arr) => arr.indexOf(v) !== i);
+        const kicker = values.find(v => v !== pairValue);
+        return { type: HAND_TYPE.PAIR, value: pairValue, kicker, values };
+      }
+      return { type: HAND_TYPE.HIGH_CARD, value: values, values };
+    }
+
+    // 比牌逻辑
+    function compareHands(hand1, hand2, isHand1Initiator) {
+      if (hand1.type !== hand2.type) return hand1.type > hand2.type ? 'hand1' : 'hand2';
+      if (hand1.value > hand2.value) return 'hand1';
+      if (hand1.value < hand2.value) return 'hand2';
+      return isHand1Initiator ? 'hand2' : 'hand1';
+    }
+
+    // 洗牌
+    function createDeck() {
+      const deck = [];
+      CARD_SUITS.forEach(suit => {
+        CARD_RANKS.forEach((rank, index) => {
+          deck.push({ suit, rank, value: index + 2, color: suit === '♥' || suit === '♦' ? 'red' : 'black' });
+        });
+      });
+      return deck.sort(() => Math.random() - 0.5);
+    }
+
+    // 同步逻辑
+    function startSync() {
+      stopSync();
+      syncTimer = setInterval(() => {
+        const latestRoom = RoomStore.get(currentRoomId);
+        if (!latestRoom) {
+          alert('房间已解散');
+          exitRoom();
+          return;
+        }
+        roomData = latestRoom;
+        renderGamePage();
+      }, 800);
+    }
+    function stopSync() {
+      if (syncTimer) clearInterval(syncTimer);
+    }
+    function updateRoomData(updateFunc) {
+      const latestRoom = RoomStore.get(currentRoomId);
+      if (!latestRoom) return;
+      updateFunc(latestRoom);
+      RoomStore.set(currentRoomId, latestRoom);
+      roomData = latestRoom;
+    }
+
+    // 玩家位置映射
+    const PLAYER_POSITION = ['top-left', 'top-right', 'left', 'right', 'bottom'];
+
+    // 渲染玩家选择下拉框
+    function renderPlayerSelect() {
+      const select = $('playerSelect');
+      if (!roomData || !roomData.players) {
+        select.innerHTML = '';
+        return;
+      }
+      // 渲染所有玩家
+      select.innerHTML = roomData.players.map(player => 
+        `<option value="${player.id}">${player.nickname}${player.isOwner ? '（房主）' : ''}</option>`
+      ).join('');
+    }
+
+    // 渲染游戏页
+    function renderGamePage() {
+      if (!roomData) return;
+      const myData = roomData.players.find(p => p.id === myId);
+      if (!myData) return;
+      const isOwner = myData.isOwner;
+      const isGamePlaying = roomData.gameStatus === 'playing';
+
+      // 顶部信息
+      $('roomIdText').innerText = `房间号：${currentRoomId}`;
+      $('potNum').innerText = roomData.pot;
+
+      // 房主设置区显示控制：只有房主、游戏未开始时显示
+      $('ownerSetBox').style.display = (isOwner && !isGamePlaying) ? 'flex' : 'none';
+      // 刷新玩家选择下拉框
+      renderPlayerSelect();
+
+      // 渲染玩家
+      const playersArea = $('playersArea');
+      playersArea.innerHTML = '';
+      
+      // 排序玩家，自己固定在底部
+      const otherPlayers = roomData.players.filter(p => p.id !== myId);
+      const sortedPlayers = [...otherPlayers, myData];
+      
+      sortedPlayers.forEach((player, index) => {
+        const isMe = player.id === myId;
+        const position = isMe ? 'bottom' : PLAYER_POSITION[index];
+        const playerHtml = `
+          <div class="player-card ${position}">
+            <div class="player-avatar">
+              <img src="${AVATAR_LIST[index % AVATAR_LIST.length]}" alt="头像">
+            </div>
+            <div class="player-name">${player.nickname} ${player.isOwner ? '👑' : ''}</div>
+            <div class="player-chip">筹码：${player.chips}</div>
+            <div class="player-status">${player.folded ? '已弃牌' : player.looked ? '已看牌' : isGamePlaying ? '游戏中' : player.ready ? '已准备' : '未准备'}</div>
+          </div>
+        `;
+        playersArea.innerHTML += playerHtml;
+      });
+
+      // 渲染我的牌
+      const cardsArea = $('myCardsArea');
+      if (myData.cards.length === 0) {
+        cardsArea.innerHTML = '<div class="card back">?</div><div class="card back">?</div><div class="card back">?</div>';
+      } else {
+        if (myData.looked) {
+          cardsArea.innerHTML = myData.cards.map(c => `<div class="card ${c.color}">${c.rank}${c.suit}</div>`).join('');
+        } else {
+          cardsArea.innerHTML = '<div class="card back">?</div><div class="card back">?</div><div class="card back">?</div>';
+        }
+      }
+
+      // 按钮显示控制
+      const isMyTurn = roomData.currentTurn === myId && !myData.folded && isGamePlaying;
+      const betDiff = roomData.currentMaxBet - myData.bet;
+      const callAmount = myData.looked ? betDiff * 2 : betDiff;
+      const canCall = betDiff > 0 && myData.chips >= callAmount;
+      const canRaise = myData.chips > callAmount;
+      const canCompare = betDiff === 0 && roomData.players.filter(p => !p.folded).length >= 2;
+
+      // 等待阶段按钮
+      if (!isGamePlaying) {
+        $('betInputBox').style.display = 'none';
+        $('lookBtn').style.display = 'none';
+        $('callBtn').style.display = 'none';
+        $('raiseBtn').style.display = 'none';
+        $('compareBtn').style.display = 'none';
+        $('foldBtn').style.display = 'none';
+        $('readyBtn').style.display = 'block';
+        $('startBtn').style.display = 'block';
+
+        $('readyBtn').disabled = myData.ready;
+        $('readyBtn').innerText = myData.ready ? '已准备' : '准备';
+        $('startBtn').disabled = !isOwner || !roomData.players.every(p => p.ready) || roomData.players.length < MIN_PLAYERS;
+      } 
+      // 游戏阶段按钮
+      else {
+        $('betInputBox').style.display = 'flex';
+        $('lookBtn').style.display = 'block';
+        $('callBtn').style.display = 'block';
+        $('raiseBtn').style.display = 'block';
+        $('compareBtn').style.display = 'block';
+        $('foldBtn').style.display = 'block';
+        $('readyBtn').style.display = 'none';
+        $('startBtn').style.display = 'none';
+
+        $('lookBtn').disabled = !isMyTurn || myData.looked;
+        $('callBtn').disabled = !isMyTurn || !canCall;
+        $('raiseBtn').disabled = !isMyTurn || !canRaise;
+        $('compareBtn').disabled = !isMyTurn || !canCompare;
+        $('foldBtn').disabled = !isMyTurn;
+        $('callBtn').innerText = canCall ? `跟注 ${callAmount}` : '跟注';
+      }
+    }
+
+    // 房主设置筹码按钮点击事件
+    $('confirmSetChipBtn').onclick = () => {
+      const selectedPlayerId = $('playerSelect').value;
+      const chipNum = parseInt($('setChipInput').value);
+      
+      if (!selectedPlayerId) {
+        alert('请选择要设置的玩家');
+        return;
+      }
+      if (isNaN(chipNum) || chipNum < 0) {
+        alert('请输入有效的筹码数（≥0）');
+        return;
+      }
+
+      // 更新玩家筹码
+      updateRoomData(room => {
+        const player = room.players.find(p => p.id === selectedPlayerId);
+        if (player) {
+          player.chips = chipNum;
+        }
+      });
+      alert('筹码设置成功！');
+    };
+
+    // 创建房间
+    $('createRoomBtn').onclick = () => {
+      const nickname = $('nicknameInput').value.trim();
+      if (!nickname) {
+        alert('请输入你的昵称');
+        return;
+      }
+      myNickname = nickname;
+      const roomId = generateRoomId();
+      currentRoomId = roomId;
+
+      const initRoom = {
+        roomId,
+        ownerId: myId,
+        players: [
+          {
+            id: myId,
+            nickname,
+            isOwner: true,
+            chips: 1000,
+            ready: false,
+            folded: false,
+            looked: false,
+            bet: 0,
+            cards: []
+          }
+        ],
+        gameStatus: 'waiting',
+        pot: 0,
+        currentMaxBet: 0,
+        currentTurn: '',
+        deck: []
+      };
+      RoomStore.set(roomId, initRoom);
+      roomData = initRoom;
+
+      showPage('gamePage');
+      startSync();
+      renderGamePage();
+    };
+
+    // 加入房间
+    $('joinRoomBtn').onclick = () => {
+      const nickname = $('nicknameInput').value.trim();
+      const roomId = $('roomIdInput').value.trim();
+      if (!nickname) {
+        alert('请输入你的昵称');
+        return;
+      }
+      if (!roomId || roomId.length !== 6 || isNaN(roomId)) {
+        alert('请输入正确的6位数字房间号');
+        return;
+      }
+      const room = RoomStore.get(roomId);
+      if (!room) {
+        alert('房间不存在');
+        return;
+      }
+      if (room.gameStatus !== 'waiting') {
+        alert('游戏已开始，请等待本局结束');
+        return;
+      }
+      if (room.players.length >= MAX_PLAYERS) {
+        alert('房间人数已满');
+        return;
+      }
+
+      myNickname = nickname;
+      currentRoomId = roomId;
+
+      updateRoomData(room => {
+        room.players.push({
+          id: myId,
+          nickname,
+          isOwner: false,
+          chips: 1000,
+          ready: false,
+          folded: false,
+          looked: false,
+          bet: 0,
+          cards: []
+        });
+      });
+
+      showPage('gamePage');
+      startSync();
+      renderGamePage();
+    };
+
+    // 准备按钮
+    $('readyBtn').onclick = () => {
+      updateRoomData(room => {
+        const player = room.players.find(p => p.id === myId);
+        player.ready = !player.ready;
+      });
+    };
+
+    // 开始游戏
+    $('startBtn').onclick = () => {
+      const deck = createDeck();
+      updateRoomData(room => {
+        room.gameStatus = 'playing';
+        room.deck = deck;
+        room.pot = 0;
+        room.currentMaxBet = BASE_BET;
+        room.currentTurn = room.players[0].id;
+
+        room.players.forEach(player => {
+          player.chips -= BASE_BET;
+          player.bet = BASE_BET;
+          room.pot += BASE_BET;
+          player.cards = [room.deck.pop(), room.deck.pop(), room.deck.pop()];
+          player.folded = false;
+          player.looked = false;
+        });
+      });
+    };
+
+    // 看牌
+    $('lookBtn').onclick = () => {
+      updateRoomData(room => {
+        const player = room.players.find(p => p.id === myId);
+        player.looked = true;
+      });
+    };
+
+    // 跟注
+    $('callBtn').onclick = () => {
+      const myData = roomData.players.find(p => p.id === myId);
+      const betDiff = roomData.currentMaxBet - myData.bet;
+      const callAmount = myData.looked ? betDiff * 2 : betDiff;
+
+      updateRoomData(room => {
+        const player = room.players.find(p => p.id === myId);
+        player.chips -= callAmount;
+        player.bet += callAmount;
+        room.pot += callAmount;
+
+        // 切换轮次
+        const activePlayers = room.players.filter(p => !p.folded);
+        const currentIndex = activePlayers.findIndex(p => p.id === room.currentTurn);
+        const nextIndex = (currentIndex + 1) % activePlayers.length;
+        room.currentTurn = activePlayers[nextIndex].id;
+      });
+    };
+
+    // 加注
+    $('raiseBtn').onclick = () => {
+      const raiseAmount = parseInt($('betInput').value);
+      const myData = roomData.players.find(p => p.id === myId);
+      const betDiff = roomData.currentMaxBet - myData.bet;
+      const baseCost = myData.looked ? betDiff * 2 : betDiff;
+      const raiseCost = myData.looked ? raiseAmount * 2 : raiseAmount;
+      const totalCost = baseCost + raiseCost;
+
+      if (isNaN(raiseAmount) || raiseAmount < BASE_BET || totalCost > myData.chips) {
+        alert(`加注金额无效，需≥${BASE_BET}`);
+        return;
+      }
+
+      updateRoomData(room => {
+        const player = room.players.find(p => p.id === myId);
+        player.chips -= totalCost;
+        player.bet += totalCost;
+        room.pot += totalCost;
+        room.currentMaxBet += raiseAmount;
+
+        // 切换轮次
+        const activePlayers = room.players.filter(p => !p.folded);
+        const currentIndex = activePlayers.findIndex(p => p.id === room.currentTurn);
+        const nextIndex = (currentIndex + 1) % activePlayers.length;
+        room.currentTurn = activePlayers[nextIndex].id;
+      });
+    };
+
+    // 比牌
+    $('compareBtn').onclick = () => {
+      const activePlayers = roomData.players.filter(p => !p.folded);
+      if (activePlayers.length < 2) return;
+
+      const currentIndex = activePlayers.findIndex(p => p.id === myId);
+      const targetIndex = currentIndex === 0 ? activePlayers.length - 1 : currentIndex - 1;
+      const targetPlayer = activePlayers[targetIndex];
+      const myData = roomData.players.find(p => p.id === myId);
+
+      const myHand = evaluateHand(myData.cards);
+      const targetHand = evaluateHand(targetPlayer.cards);
+      const winner = compareHands(myHand, targetHand, true);
+
+      updateRoomData(room => {
+        if (winner === 'hand1') {
+          const loser = room.players.find(p => p.id === targetPlayer.id);
+          loser.folded = true;
+        } else {
+          const loser = room.players.find(p => p.id === myId);
+          loser.folded = true;
+        }
+
+        // 检查是否只剩1人
+        const remainingPlayers = room.players.filter(p => !p.folded);
+        if (remainingPlayers.length === 1) {
+          const finalWinner = remainingPlayers[0];
+          finalWinner.chips += room.pot;
+          room.gameStatus = 'roundEnd';
+          renderResultModal(finalWinner, room.players);
+        } else {
+          // 切换轮次
+          const activePlayers = room.players.filter(p => !p.folded);
+          const currentIndex = activePlayers.findIndex(p => p.id === room.currentTurn);
+          const nextIndex = (currentIndex + 1) % activePlayers.length;
+          room.currentTurn = activePlayers[nextIndex].id;
+        }
+      });
+    };
+
+    // 弃牌
+    $('foldBtn').onclick = () => {
+      updateRoomData(room => {
+        const player = room.players.find(p => p.id === myId);
+        player.folded = true;
+
+        const remainingPlayers = room.players.filter(p => !p.folded);
+        if (remainingPlayers.length === 1) {
+          const finalWinner = remainingPlayers[0];
+          finalWinner.chips += room.pot;
+          room.gameStatus = 'roundEnd';
+          renderResultModal(finalWinner, room.players);
+        } else {
+          // 切换轮次
+          const activePlayers = room.players.filter(p => !p.folded);
+          const currentIndex = activePlayers.findIndex(p => p.id === room.currentTurn);
+          const nextIndex = (currentIndex + 1) % activePlayers.length;
+          room.currentTurn = activePlayers[nextIndex].id;
+        }
+      });
+    };
+
+    // 渲染结果弹窗
+    function renderResultModal(winner, allPlayers) {
+      $('resultTitle').innerText = `${winner.nickname} 获胜！`;
+      
+      let cardsHtml = '';
+      allPlayers.forEach(player => {
+        const hand = evaluateHand(player.cards);
+        cardsHtml += `
+          <div class="result-player-cards">
+            <div>${player.nickname}（${HAND_TYPE_NAME[hand.type]}）</div>
+            <div class="result-card-row">
+              ${player.cards.map(c => `<div class="card ${c.color}">${c.rank}${c.suit}</div>`).join('')}
+            </div>
+          </div>
+        `;
+      });
+      $('resultCards').innerHTML = cardsHtml;
+      $('resultDesc').innerText = `赢走奖池 ${roomData.pot} 筹码`;
+      $('resultModal').classList.add('active');
+    }
+
+    // 关闭结果弹窗
+    $('closeResultBtn').onclick = () => {
+      $('resultModal').classList.remove('active');
+      updateRoomData(room => {
+        room.gameStatus = 'waiting';
+        room.pot = 0;
+        room.currentMaxBet = 0;
+        room.currentTurn = '';
+        room.players.forEach(player => {
+          player.ready = false;
+          player.bet = 0;
+          player.cards = [];
+          player.folded = false;
+          player.looked = false;
+        });
+      });
+    };
+
+    // 退出房间
+    function exitRoom() {
+      stopSync();
+      if (currentRoomId) {
+        const room = RoomStore.get(currentRoomId);
+        if (room) {
+          room.players = room.players.filter(p => p.id !== myId);
+          if (room.players.length === 0) {
+            RoomStore.delete(currentRoomId);
+          } else {
+            if (room.ownerId === myId) {
+              room.ownerId = room.players[0].id;
+              room.players[0].isOwner = true;
+            }
+            RoomStore.set(currentRoomId, room);
+          }
+        }
+      }
+      currentRoomId = '';
+      roomData = {};
+      showPage('homePage');
+    }
+    $('exitRoomBtn').onclick = exitRoom;
+    window.onbeforeunload = exitRoom;
+  </script>
+</body>
+</html>
