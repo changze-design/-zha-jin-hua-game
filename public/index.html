@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3-5人炸金花·实时联机</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:Arial,"Microsoft YaHei",sans-serif}
+body{background:linear-gradient(135deg,#0b1a25,#1a2c3a,#233a4a);color:#fff;min-height:100vh;padding:10px}
+.container{max-width:1000px;margin:0 auto}
+.room-bar{background:rgba(0,0,0,0.4);padding:12px;border-radius:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.room-bar input{padding:8px 10px;border-radius:6px;border:none;outline:none;width:110px}
+.room-bar button{padding:8px 12px;background:#ffcc00;color:#111;border:none;border-radius:6px;font-weight:700;cursor:pointer}
+.admin{background:rgba(0,0,0,0.4);padding:10px;border-radius:10px;margin-bottom:10px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.admin input{padding:6px 8px;border-radius:6px;border:none;width:80px}
+.admin button{padding:6px 10px;background:#ffcc00;color:#111;border:none;border-radius:6px;cursor:pointer}
+.players{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:20px}
+.player{background:rgba(255,255,255,0.08);padding:12px;border-radius:10px;text-align:center}
+.player h4{margin-bottom:8px;color:#ffcc00}
+.cards{display:flex;gap:4px;justify-content:center;margin-bottom:8px}
+.card{width:40px;height:55px;background:#fff;color:#222;border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;border:2px solid #ddd}
+.card.back{background:#111;color:#111;border-color:#333}
+.pot{text-align:center;font-size:18px;color:#2ecc71;margin:10px 0}
+.tip{text-align:center;font-size:16px;color:#ffcc00;margin:10px 0}
+.btns{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin:10px 0}
+.btn{padding:10px 14px;border:none;border-radius:8px;font-weight:700;cursor:pointer}
+.btn-y{background:#ffcc00;color:#111}
+.btn-b{background:#3498db;color:#fff}
+.btn-g{background:#2ecc71;color:#fff}
+.btn-r{background:#e74c3c;color:#fff}
+.copyright{text-align:center;color:#aaa;font-size:12px;margin-top:20px}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="room-bar">
+<input id="roomId" placeholder="房间号" value="888">
+<input id="uid" placeholder="你的ID" value="u1">
+<input id="nick" placeholder="昵称" value="玩家1">
+<button onclick="joinRoom()">进入房间</button>
+</div>
+<div class="admin">
+<input type="text" id="targetUid" placeholder="玩家ID">
+<input type="number" id="addNum" placeholder="积分" value="1000">
+<button onclick="giveTo()">给指定玩家加</button>
+<button onclick="giveAll(1000)">全员+1000</button>
+<button onclick="resetAll()">重置全员1000</button>
+</div>
+<div class="pot">奖池：<span id="pot">0</span></div>
+<div class="tip" id="tip">欢迎进入3-5人联机炸金花</div>
+<div class="players" id="players"></div>
+<div class="btns">
+<button class="btn btn-y" onclick="startGame()">开始游戏</button>
+<button class="btn btn-b" onclick="lookCard()">看牌</button>
+<button class="btn btn-g" onclick="menPai()">闷牌</button>
+<button class="btn btn-r" onclick="giveUp()">弃牌</button>
+<button class="btn btn-y" onclick="biPai()">比牌</button>
+</div>
+<div class="copyright">仅限好友娱乐，无赌博功能</div>
+</div>
+<script>
+let ws;
+const roomIdEl = document.getElementById("roomId");
+const uidEl = document.getElementById("uid");
+const nickEl = document.getElementById("nick");
+const targetUidEl = document.getElementById("targetUid");
+const addNumEl = document.getElementById("addNum");
+const potEl = document.getElementById("pot");
+const tipEl = document.getElementById("tip");
+const playersEl = document.getElementById("players");
+let roomId = "888", uid = "u1", nick = "玩家1";
+function connect() {
+  const p = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(p + '//' + window.location.host);
+  ws.onopen = () => showTip("已连接服务器");
+  ws.onmessage = e => {
+    const d = JSON.parse(e.data);
+    if (d.type === 'sync') renderPlayers(d.room);
+    if (d.type === 'tip') showTip(d.msg);
+    if (d.type === 'gameOver') showTip(`${d.winner} 胜利！奖池 ${d.pot}`);
+  };
+}
+function send(type, action = '', payload = {}) {
+  if (!ws || ws.readyState !== 1) return showTip("未连接");
+  ws.send(JSON.stringify({ type, roomId, uid, nick, action, payload }));
+}
+function joinRoom() {
+  roomId = roomIdEl.value;
+  uid = uidEl.value;
+  nick = nickEl.value;
+  if (!ws) connect();
+  send('join');
+}
+function renderPlayers(room) {
+  playersEl.innerHTML = '';
+  Object.keys(room.users).forEach(u => {
+    const p = room.users[u];
+    let cards = '';
+    for (let i=0;i<3;i++) {
+      if (p.cards[i] && (u === uid || p.isMing)) cards += `<div class="card">${p.cards[i]}</div>`;
+      else cards += `<div class="card back">?</div>`;
+    }
+    playersEl.innerHTML += `
+    <div class="player">
+      <h4>${p.nick} (ID:${u})</h4>
+      <div class="cards">${cards}</div>
+      <div>${p.score}</div>
+      <div style="font-size:12px">${p.isMing?"明牌":"闷"} ${p.fold?"弃牌":""}</div>
+    </div>`;
+  });
+  potEl.innerText = room.pot;
+}
+function showTip(s) { tipEl.innerText = s; }
+function startGame() { send('action','start'); }
+function lookCard() { send('action','look'); }
+function menPai() { send('action','men'); }
+function giveUp() { send('action','fold'); }
+function biPai() { send('action','bi'); }
+function giveTo() {
+  const t = targetUidEl.value;
+  const n = parseInt(addNumEl.value)||1000;
+  if(!t)return showTip("请填玩家ID");
+  send('action','giveTo',{targetUid:t,num:n});
+}
+function giveAll(num) { send('action','giveAll',{num}); }
+function resetAll() { send('action','resetAll'); }
+</script>
+</body>
+</html>
